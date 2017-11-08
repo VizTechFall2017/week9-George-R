@@ -17,12 +17,17 @@ var albersProjection = d3.geoAlbersUsa()  //tell it which projection to use
 path = d3.geoPath()
     .projection(albersProjection);        //tell it to use the projection that we just made to convert lat/long to pixels
 
+var stateLookup = d3.map();
 
-//import the data from the .csv file
-d3.json('./cb_2016_us_state_20m.json', function(dataIn){
+var sizeScale = d3.scaleLinear().range([0, 50]);
+
+queue()
+    .defer(d3.json, "./cb_2016_us_state_20m.json")
+    .defer(d3.csv, "./statePop.csv")
+    .await(function(err, mapData, populationData){
 
     svg.selectAll("path")               //make empty selection
-        .data(dataIn.features)          //bind to the features array in the map data
+        .data(mapData.features)          //bind to the features array in the map data
         .enter()
         .append("path")                 //add the paths to the DOM
         .attr("d", path)                //actually draw them
@@ -32,22 +37,36 @@ d3.json('./cb_2016_us_state_20m.json', function(dataIn){
         .attr('stroke-width',.2);
 
 
+    populationData.forEach(function(d){
+        stateLookup.set(d.name, d.population);
+    });
+
+    sizeScale.domain([0, d3.max(populationData.map(function(d){return +d.population}))]);
+
+    var centroids = mapData.features.map(function (feature){
+            return {name: feature.properties.NAME, center: path.centroid(feature)};
+    });
+
+
+    //noPR = centroids.filter(function(d) { return !isNaN(d.center[0]); });
+
     svg.selectAll('circle')
-        .data([{long:-71.0589, lat:42.3601}])       //bind a single data point, with the long lat of Boston
+        .data(centroids)       //bind a single data point, with the long lat of Boston
                                                     //note that long is negative because it is a W long point!
         .enter()
         .append('circle')
+        .attr('id', function(d) {return d.name})
         .attr('cx', function (d){
-            return albersProjection([d.long, d.lat])[0]
+            return d.center[0];
         })
         .attr('cy', function (d){
-            return albersProjection([d.long, d.lat])[1]
+            return d.center[1];
         })
-        .attr('r', 10)
+        .attr('id',function(d){return d.name})
+        .attr('r', function(d){
+            return sizeScale(stateLookup.get(d.name))
+        })
         .attr('fill','purple')
-
+        .attr('fill-opacity',.7);
 
   });
-
-
-

@@ -28,14 +28,14 @@ var makeArc = d3.arc()
 
 var labelArc = d3.arc()
     .outerRadius(pieRadius - 30)
-    .innerRadius(pieRadius - 30);
+    .innerRadius(pieRadius - 50);
 
 var makePie = d3.pie()
     .sort(null)
-    .value(function(d) { return d.total; });
+    .value(function(d) { return d.Type; });
 
 //import the data from the .csv file
-d3.csv('./incomeData.csv', function(dataIn){
+d3.csv('.data.csv', function(dataIn){
 
     nestedData = d3.nest()
         .key(function(d){return d.year})
@@ -58,15 +58,12 @@ d3.csv('./incomeData.csv', function(dataIn){
 
     g.append('path')              //grab each group in the variable above, and add a path to it (this will be the pie wedge)
         .attr('d',makeArc)        //call the makeArc generator function to draw the actual wedges
-        .attr('fill', function(d){ return scaleColor(d.data.age)});   //give the wedges a color, based on their d.age values
+        .attr('fill', function(d){ return scaleColor(d.data.Content)});   //give the wedges a color, based on their d.age values
 
 
     g.append("text")
         .attr("transform", function(d) {return "translate(" + labelArc.centroid(d) + ")"; })
         .attr("dy", ".35em")
         .attr('text-anchor','middle')
-        .text(function(d) { return d.data.age; });
+        .text(function(d) { return d.data.Content; });
 });
-
-
-
