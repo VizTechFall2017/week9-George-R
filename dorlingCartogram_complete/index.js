@@ -21,31 +21,67 @@ var stateLookup = d3.map();
 
 var sizeScale = d3.scaleLinear().range([0, 50]);
 
+var div = d3.select(".tooltip")
+                .append("html")
+                .attr("class", "tooltip")
+
+var formatDecimal = d3.format(",.2f");
+var formatMoney = function(d) { return "$" + formatDecimal(d); };
+
 queue()
     .defer(d3.json, "./cb_2016_us_state_20m.json")
-    .defer(d3.csv, "./statePop.csv")
+    .defer(d3.csv, "./daca.csv")
     .await(function(err, mapData, populationData){
 
+      populationData.forEach(function(d){
+          stateLookup.set(d.name, d.population);
+      });
+
+console.log(mapData.features)
     svg.selectAll("path")               //make empty selection
         .data(mapData.features)          //bind to the features array in the map data
         .enter()
         .append("path")                 //add the paths to the DOM
         .attr("d", path)                //actually draw them
         .attr("class", "feature")
-        .attr('fill','gainsboro')
-        .attr('stroke','white')
-        .attr('stroke-width',.2);
+        .attr('fill','#98A2CB')
+        .attr("fill-opacity", .7)
+        .attr('stroke','black')
+        .attr('stroke-width',.2)
+        .on("mouseover", function(d){
+          d3.select(this)
+          .attr("fill-opacity", 1)
+
+          div.transition()
+                .duration(200)
+
+                .style("opacity", .9)
+                .style("background", "#1fb35d")
+
+                div	.html("<span>" + d.properties.NAME + "</span>" + "<br/>"+"<br/>" + "<strong>" + formatMoney(stateLookup.get(d.properties.NAME)) + "</strong>" )
+                                .style("left",(d3.event.pageX) + 10 + "px")
+                                .style("top",(d3.event.pageY - 28) + "px")
+
+        })
+        .on("mouseout", function(d){
+          d3.select(this)
+          .attr("fill-opacity", 0.7)
+        })
 
 
-    populationData.forEach(function(d){
-        stateLookup.set(d.name, d.population);
-    });
+
+
+
 
     sizeScale.domain([0, d3.max(populationData.map(function(d){return +d.population}))]);
 
     var centroids = mapData.features.map(function (feature){
             return {name: feature.properties.NAME, center: path.centroid(feature)};
-    });
+    })
+
+
+
+    ;
 
 
     //noPR = centroids.filter(function(d) { return !isNaN(d.center[0]); });
@@ -65,10 +101,28 @@ queue()
         .attr('r', function(d){
             return sizeScale(stateLookup.get(d.name))
         })
-        .attr('fill','purple')
-        .attr('fill-opacity',.7);
+        .attr('fill','red')
+        .attr('fill-opacity',.7)
+        .on("mouseover", function(d){
+          d3.select(this)
+          .attr("fill-opacity", 1)
+          div.transition()
+                .duration(200)
+                .style("opacity", .9)
+
+                .style("background", '#1fb35d')
+
+                div	.html("<span>" + formatMoney(stateLookup.get(d.name)) + "</span>"  )
+                                .style("left",(d3.event.pageX) + 10 + "px")
+                                .style("top",(d3.event.pageY - 28) + "px")
+
+        })
+        .on("mouseout", function(d){
+          d3.select(this)
+          .attr("fill-opacity", 0.7)
+          
+        })
+
+
 
   });
-
-
-
